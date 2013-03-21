@@ -26,6 +26,7 @@
  * @subpackage validator
  * @author Markus Malkusch <markus@malkusch.de>
  * @copyright Copyright (C) 2007 Markus Malkusch
+ * @author hhilbert 2013-03-12 changed transformation mapping and weighting
  */
 class BAV_Validator_C6 extends BAV_Validator {
 	
@@ -39,9 +40,11 @@ class BAV_Validator_C6 extends BAV_Validator {
         1 => 4451981,
         2 => 4451992,
         3 => 4451993,
+        4 => 4344992,
         5 => 4344990,
         6 => 4344991,
         7 => 5499570,
+        8 => 4451994,
         9 => 5499579
 	);
 
@@ -61,6 +64,7 @@ class BAV_Validator_C6 extends BAV_Validator {
         parent::__construct($bank);
         
         $this->validator = new BAV_Validator_00($bank);
+        $this->validator->setWeights(array(2,1));
     }
     
     

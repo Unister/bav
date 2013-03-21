@@ -197,12 +197,25 @@ class BAV_FileParser extends BAV {
     }
     /**
      */
-    public function __destruct() {
-        if (is_resource($this->fp)) {
+    public function close($bWithDelete = false)
+    {
+        if (is_resource($this->fp))
+        {
             fclose($this->fp);
-
+            $this->fp = null;
+        }
+        if($bWithDelete)
+        {
+            unlink($this->file);
         }
     }
+
+    /**
+     */
+    public function __destruct() {
+        $this->close();
+    }
+
     /**
      * @throws BAV_FileParserException_ParseError
      * @param string $line
