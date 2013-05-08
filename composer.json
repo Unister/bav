@@ -1,0 +1,13 @@
+{
+    "name": "malkusch/bav",
+    "description": "BAV is a Bank Account (Konto) Validator written in PHP.",
+    "type": "library",
+    "keywords": ["bank account", "validator"],
+    "homepage": "https://bav.malkusch.de",
+    "autoload": {
+        "classmap": ["classes"]
+    },
+    "require": {
+        "php": ">=5.3.0"
+    }
+}
