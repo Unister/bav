@@ -244,7 +244,7 @@ class ValidatorTest extends PHPUnit_Framework_TestCase {
             $this->assertEquals(
                 $expectedValidation,
                 $bank->isValid($accountID),
-                "$accountID validates wrongly."
+                "$accountID validates wrongly: " . $bank->getValidationType()
             );
 
         }

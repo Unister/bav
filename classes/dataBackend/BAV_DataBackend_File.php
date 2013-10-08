@@ -34,7 +34,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * @FIXME BAV_DataBackend_File is broken as Bundesbank appends new Banks at the end of the file
  */
 class BAV_DataBackend_File extends BAV_DataBackend {
 
@@ -128,15 +127,37 @@ class BAV_DataBackend_File extends BAV_DataBackend {
     public function install() {
         $this->update();
     }
+
+
     /**
      * This method works only if your PHP is compiled with cURL.
-     * TODO: test this with a proxy
-     * 
+     *
      * @see BAV_DataBackend::update()
      * @throws BAV_DataBackendException_IO
      */
-    public function update() {
-        $ch = curl_init(self::DOWNLOAD_URI);
+    public function update()
+    {
+        $parser = $this->load();
+        $this->safeRename($parser->getFile(), $this->parser->getFile());
+    }
+
+    /**
+     * This method works only if your PHP is compiled with cURL.
+     * TODO: test this with a proxy
+     *
+     * @see BAV_DataBackend::update()
+     *
+     * @param string $sUrl
+     * @throws BAV_DataBackendException
+     * @throws BAV_DataBackendException_IO
+     * @return BAV_FileParser
+     */
+    public function load($sUrl = null) {
+        if(empty($sUrl))
+        {
+            $sUrl = self::DOWNLOAD_URI;
+        }
+        $ch = curl_init($sUrl);
         if (! is_resource($ch)) {
             throw new BAV_DataBackendException_IO();
             
@@ -148,14 +169,14 @@ class BAV_DataBackend_File extends BAV_DataBackend {
             throw new BAV_DataBackendException_IO(
                 sprintf(
                     "Failed to download '%s'. HTTP Code: %d",
-                    self::DOWNLOAD_URI,
+                    $sUrl,
                     $curl_info['http_code']
                 )
             );
         }
         if (! $content) {
             throw new BAV_DataBackendException_IO(
-                "Failed to download '" . self::DOWNLOAD_URI . "'."
+                "Failed to download '" . $sUrl . "'."
             );
         
         }
@@ -186,7 +207,7 @@ class BAV_DataBackend_File extends BAV_DataBackend {
         }
         $path = $isZIP ? $zipMatches[1] : $txtMatches[1];
         if (strlen($path) > 0 && $path{0} != "/") {
-            $path = sprintf("/%s/%s", dirname(self::DOWNLOAD_URI), $path);
+            $path = sprintf("/%s/%s", dirname($sUrl), $path);
             
         }
         $pathParts = explode('/', $path);
@@ -202,9 +223,9 @@ class BAV_DataBackend_File extends BAV_DataBackend {
 
         }
         $path = implode('/', $pathParts);
-        $urlParts = parse_url(self::DOWNLOAD_URI);
+        $urlParts = parse_url($sUrl);
         $url = sprintf("%s://%s%s", $urlParts["scheme"],  $urlParts["host"], $path);
-        
+
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_FILE, $tempH);
         if (! curl_exec($ch)) {
@@ -245,7 +266,7 @@ class BAV_DataBackend_File extends BAV_DataBackend {
 
         }
 
-        $this->safeRename($file, $this->parser->getFile());
+        return $parser;
     }
 
 

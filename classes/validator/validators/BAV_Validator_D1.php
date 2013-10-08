@@ -27,6 +27,7 @@
  * @subpackage validator
  * @author Markus Malkusch <markus@malkusch.de>
  * @copyright Copyright (C) 2010 Markus Malkusch
+ * @author hhilbert 2013-03-12 changed transformation mapping
  */
 class BAV_Validator_D1 extends BAV_Validator {
 
@@ -43,6 +44,7 @@ class BAV_Validator_D1 extends BAV_Validator {
         4 => 4363384,
         5 => 4363385,
         6 => 4363386,
+        7 => 4363387,
         9 => 4363389
 	);
 
@@ -72,7 +74,7 @@ class BAV_Validator_D1 extends BAV_Validator {
 
         }
         $transformationPrefix = self::$_transformation[$transformationIndex];
-        $this->validator->setNormalizedSize(10 + strlen($transformationPrefix));
+        $this->validator->setNormalizedSize(9 + strlen($transformationPrefix));
         $this->transformedAccount 
             = $transformationPrefix . substr($this->account, 1);
     }
