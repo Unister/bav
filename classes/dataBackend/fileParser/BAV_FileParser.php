@@ -37,27 +37,31 @@
 class BAV_FileParser extends BAV {
 
     
-    const FILE_ENCODING     = 'ISO-8859-15';
-    const BANKID_OFFSET     = 0;
-    const BANKID_LENGTH     = 8;
-    const ISMAIN_OFFSET     = 8;
-    const ISMAIN_LENGTH     = 1;
-    const NAME_OFFSET       = 9;
-    const NAME_LENGTH       = 58;
-    const POSTCODE_OFFSET   = 67;
-    const POSTCODE_LENGTH   = 5;
-    const CITY_OFFSET       = 72;
-    const CITY_LENGTH       = 35;
-    const SHORTTERM_OFFSET  = 107;
-    const SHORTTERM_LENGTH  = 27;
-    const PAN_OFFSET        = 134;
-    const PAN_LENGTH        = 5;
-    const BIC_OFFSET        = 139;
-    const BIC_LENGTH        = 11;
-    const TYPE_OFFSET       = 150;
-    const TYPE_LENGTH       = 2;
-    const ID_OFFSET         = 152;
-    const ID_LENGTH         = 6;
+    const FILE_ENCODING          = 'ISO-8859-15';
+    const BANKID_OFFSET          = 0;
+    const BANKID_LENGTH          = 8;
+    const ISMAIN_OFFSET          = 8;
+    const ISMAIN_LENGTH          = 1;
+    const NAME_OFFSET            = 9;
+    const NAME_LENGTH            = 58;
+    const POSTCODE_OFFSET        = 67;
+    const POSTCODE_LENGTH        = 5;
+    const CITY_OFFSET            = 72;
+    const CITY_LENGTH            = 35;
+    const SHORTTERM_OFFSET       = 107;
+    const SHORTTERM_LENGTH       = 27;
+    const PAN_OFFSET             = 134;
+    const PAN_LENGTH             = 5;
+    const BIC_OFFSET             = 139;
+    const BIC_LENGTH             = 11;
+    const TYPE_OFFSET            = 150;
+    const TYPE_LENGTH            = 2;
+    const ID_OFFSET              = 152;
+    const ID_LENGTH              = 6;
+    const IBANRULENUMBER_OFFSET  = 168;
+    const IBANRULENUMBER_LENGTH  = 4;
+    const IBANRULEVERSION_OFFSET = 172;
+    const IBANRULEVERSION_LENGTH = 2;
     
     
     private
@@ -228,7 +232,9 @@ class BAV_FileParser extends BAV {
         }
         $type   = self::$encoding->substr($line, self::TYPE_OFFSET,      self::TYPE_LENGTH);
         $bankID = self::$encoding->substr($line, self::BANKID_OFFSET,    self::BANKID_LENGTH);
-        return new BAV_Bank($dataBackend, $bankID, $type);
+        $ibanRuleNumber = intval(self::$encoding->substr($line, self::IBANRULENUMBER_OFFSET, self::IBANRULENUMBER_LENGTH));
+        $ibanRuleVersion = intval(self::$encoding->substr($line, self::IBANRULEVERSION_OFFSET, self::IBANRULEVERSION_LENGTH));
+        return new BAV_Bank($dataBackend, $bankID, $type, $ibanRuleNumber, $ibanRuleVersion);
     }
     /**
      * @throws BAV_FileParserException_ParseError

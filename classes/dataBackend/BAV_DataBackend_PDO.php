@@ -112,7 +112,7 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
         try {
             $this->prepareStatements();
             $agencies = array();
-            
+
             foreach ($this->pdo->query($sql) as $result) {
                 if (! $this->isValidAgencyResult($result)) {
                     if (! array_key_exists('id', $result)) {
@@ -151,8 +151,8 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
 
         }
     }
-    
-    
+
+
     /**
      * @throws PDOException
      */
@@ -160,9 +160,9 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
         if (! is_null($this->selectBank)) {
             return;
         }
-        
+
         $this->selectBank = $this->pdo->prepare("SELECT id, validator FROM {$this->prefix}bank WHERE id = :bankID");
-        
+
         $agencyAttributes
             = "a.id, name, postcode, city, shortTerm AS 'shortTerm', pan, bic";
         $this->selectMainAgency = $this->pdo->prepare(
@@ -190,11 +190,11 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
         try {
             $fileBackend = new BAV_DataBackend_File(tempnam(BAV_DataBackend_File::getTempdir(), 'bav'));
             $fileBackend->install();
-            
+
             $insertBank     = $this->pdo->prepare(
                 "INSERT INTO {$this->prefix}bank
-                    (id, validator, mainAgency)
-                    VALUES(:bankID, :validator, :mainAgency)");
+                    (id, validator, ibanRuleNumber, ibanRuleVersion, mainAgency)
+                    VALUES(:bankID, :validator, :ibanRuleNumber, :ibanRuleVersion, :mainAgency)");
             $insertAgency   = $this->pdo->prepare(
                 "INSERT INTO {$this->prefix}agency
                     (id, name, postcode, city, shortTerm, pan, bic, bank)
@@ -202,20 +202,23 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
             try {
                 $this->pdo->beginTransaction();
                 $useTA = true;
-            
+
             } catch (PDOException $e) {
                 trigger_error("Your DBS doesn't support transactions. Your data may be corrupted.");
-            
+
             }
             $this->pdo->exec("DELETE FROM {$this->prefix}agency");
             $this->pdo->exec("DELETE FROM {$this->prefix}bank");
-            
+
             foreach ($fileBackend->getAllBanks() as $bank) {
             	try {
+                    $ibanRule = $bank->getIbanRule();
 	                $insertBank->execute(array(
-	                    ":bankID"       => $bank->getBankID(),
-	                    ":validator"    => $bank->getValidationType(),
-	                    ":mainAgency"   => $bank->getMainAgency()->getID(),
+                        ":bankID"          => $bank->getBankID(),
+                        ":validator"       => $bank->getValidationType(),
+                        ":ibanRuleNumber"  => $ibanRule['number'],
+                        ":ibanRuleVersion" => $ibanRule['version'],
+                        ":mainAgency"      => $bank->getMainAgency()->getID(),
 	                ));
 	                $agencies   = $bank->getAgencies();
 	                $agencies[] = $bank->getMainAgency();
@@ -230,22 +233,22 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
 	                        ":pan"          => $agency->hasPAN() ? $agency->getPAN() : null,
 	                        ":bic"          => $agency->hasBIC() ? $agency->getBIC() : null
 	                    ));
-	                
+
 	                }
             	} catch(BAV_DataBackendException_NoMainAgency $e) {
             	   	trigger_error(
                         "Skipping bank {$e->getBank()->getBankID()} without any main agency."
                	    );
-            		
+
             	}
             }
             if ($useTA) {
                 $this->pdo->commit();
                 $useTA = false;
-                
+
             }
             $fileBackend->uninstall();
-            
+
         } catch (Exception $e) {
             try {
                 if ($useTA) {
@@ -253,14 +256,14 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
 
                 }
                 throw $e;
-                    
+
             } catch (PDOException $e2) {
                 throw new BAV_DataBackendException_IO(
                     get_class($e) . ": {$e->getMessage()}\nadditionally: {$e2->getMessage()}"
                 );
-                
+
             }
-        
+
         }
     }
 
@@ -273,25 +276,27 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
         try {
         	$createOptions = '';
         	switch ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME)) {
-        		
+
         		case 'mysql':
         			$createOptions .= " engine=InnoDB";
         			break;
-        			
+
         	}
             $this->pdo->exec("
-            
+
                 CREATE TABLE {$this->prefix}bank(
-                    id          int primary key,
-                    validator   char(2) NOT NULL,
-                    mainAgency  int NOT NULL
-                    
+                    id              int primary key,
+                    validator       char(2) NOT NULL,
+                    ibanRuleNumber  int NOT NULL DEFAULT 0
+                    ibanRuleVersion int NOT NULL DEFAULT 0
+                    mainAgency      int NOT NULL
+
                     /* FOREIGN KEY (mainAgency) REFERENCES {$this->prefix}agency(id) */
                 )$createOptions
-            
+
             ");
             $this->pdo->exec("
-            
+
                 CREATE TABLE {$this->prefix}agency(
                     id          int primary key,
                     name        varchar(".BAV_FileParser::NAME_LENGTH.")        NOT NULL,
@@ -301,16 +306,16 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
                     bank        int                                             NOT NULL,
                     pan         char(".BAV_FileParser::PAN_LENGTH.")            NULL,
                     bic         varchar(".BAV_FileParser::BIC_LENGTH.")         NULL,
-                    
+
                     FOREIGN KEY (bank) REFERENCES {$this->prefix}bank(id)
                 )$createOptions
-            
+
             ");
             $this->update();
-        
+
         } catch (PDOException $e) {
             throw new BAV_DataBackendException_IO($e->getMessage());
-        
+
         }
     }
     /**
@@ -321,13 +326,13 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
         try {
             $this->pdo->exec("DROP TABLE {$this->prefix}bank");
             $this->pdo->exec("DROP TABLE {$this->prefix}agency");
-            
+
         } catch (PDOException $e) {
             throw new BAV_DataBackendException_IO();
-        
+
         }
     }
-    
+
 
     /**
      * @see BAV_DataBackend::getAllBanks()
@@ -339,17 +344,17 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
             foreach ($this->pdo->query("SELECT id, validator FROM {$this->prefix}bank") as $bankResult) {
                 if (isset($this->instances[$bankResult['id']])) {
                     continue;
-                
+
                 }
                 $bank = $this->getBankObject($bankResult);
                 $this->instances[$bank->getBankID()] = $bank;
-                
+
             }
             return array_values($this->instances);
-            
+
         } catch (PDOException $e) {
             throw new BAV_DataBackendException_IO();
-        
+
         } catch (BAV_DataBackendException_IO_MissingAttributes $e) {
             $this->selectBank->closeCursor();
             throw new LogicException($e);
@@ -371,15 +376,15 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
             if ($result === false) {
                 $this->selectBank->closeCursor();
                 throw new BAV_DataBackendException_BankNotFound($bankID);
-            
+
             }
             $this->selectBank->closeCursor();
             return $this->getBankObject($result);
-            
+
         } catch (PDOException $e) {
             $this->selectBank->closeCursor();
             throw new BAV_DataBackendException_IO();
-        
+
         } catch (BAV_DataBackendException_IO_MissingAttributes $e) {
             $this->selectBank->closeCursor();
             throw new LogicException($e);
@@ -390,8 +395,10 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
      * @return bool
      */
     private function isValidBankResult(Array $result) {
-        return array_key_exists('id',           $result)
-            && array_key_exists('validator',    $result);
+        return array_key_exists('id',              $result)
+            && array_key_exists('validator',       $result)
+            && array_key_exists('ibanRuleNumber',  $result)
+            && array_key_exists('ibanRuleVersion', $result);
     }
     /**
      * @return bool
@@ -414,7 +421,7 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
             throw new BAV_DataBackendException_IO_MissingAttributes();
 
         }
-        return new BAV_Bank($this, $fetchedResult['id'], $fetchedResult['validator']);
+        return new BAV_Bank($this, $fetchedResult['id'], $fetchedResult['validator'], $fetchedResult['ibanRuleNumber'], $fetchedResult['ibanRuleVersion']);
     }
     /**
      * @return BAV_Agency

@@ -63,8 +63,11 @@ class BAV_Bank extends BAV {
     /**
      * @var Array
      */
-    $agencies;
-
+    $agencies,
+    /**
+     * @var Array
+     */
+    $ibanRule = array();
 
     /**
      * Do not even think to use new BAV_Bank()!
@@ -72,11 +75,17 @@ class BAV_Bank extends BAV {
      *
      * @param string $bankID
      * @param string $validationType
+     * @param int $ibanRuleNumber
+     * @param int $ibanRuleVersion
      */
-    public function __construct(BAV_DataBackend $dataBackend, $bankID, $validationType) {
+    public function __construct(BAV_DataBackend $dataBackend, $bankID, $validationType, $ibanRuleNumber = 0, $ibanRuleVersion = 0) {
         $this->dataBackend = $dataBackend;
         $this->bankID = $bankID;
         $this->validationType = $validationType;
+        $this->ibanRule = array(
+            'number'  => $ibanRuleNumber,
+            'version' => $ibanRuleVersion
+        );
     }
     /**
      * @return string
@@ -138,7 +147,13 @@ class BAV_Bank extends BAV {
         return $this->validator;
     }
 
-
+    /**
+     * Get iban rule of bank account.
+     * @return array
+     */
+    public function getIbanRule() {
+        return $this->ibanRule;
+    }
 }
 
 
