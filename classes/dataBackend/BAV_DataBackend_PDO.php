@@ -1,15 +1,4 @@
 <?php
-
-
-
-
-
-
-
-
-
-
-
 /**
  * Use any DBS as backend. In addition to the BAV_DataBackend methods you
  * may use getAgencies($sql) which returns an array of BAV_Agency objects.
@@ -72,7 +61,11 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
     /**
      * @var string
      */
-    $prefix = '';
+    $prefix = '',
+    /**
+     * @var string
+     */
+    $importFilename = '';
 
 
     /**
@@ -161,7 +154,8 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
             return;
         }
 
-        $this->selectBank = $this->pdo->prepare("SELECT id, validator FROM {$this->prefix}bank WHERE id = :bankID");
+        $this->selectBank = $this->pdo->prepare("SELECT id, validator, ibanRuleNumber, ibanRuleVersion "
+            . "FROM {$this->prefix}bank WHERE id = :bankID");
 
         $agencyAttributes
             = "a.id, name, postcode, city, shortTerm AS 'shortTerm', pan, bic";
@@ -188,8 +182,15 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
     public function update() {
         $useTA = false;
         try {
-            $fileBackend = new BAV_DataBackend_File(tempnam(BAV_DataBackend_File::getTempdir(), 'bav'));
-            $fileBackend->install();
+            $importFilename = $this->getImportFilename();
+            if (empty($importFilename)) {
+                $fileBackend = new BAV_DataBackend_File(tempnam(BAV_DataBackend_File::getTempdir(), 'bav'));
+                $fileBackend->install();
+                $temporaryFile = true;
+            } else {
+                $fileBackend = new BAV_DataBackend_File($importFilename);
+                $temporaryFile = false;
+            }
 
             $insertBank     = $this->pdo->prepare(
                 "INSERT INTO {$this->prefix}bank
@@ -247,7 +248,9 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
                 $useTA = false;
 
             }
-            $fileBackend->uninstall();
+            if ($temporaryFile) {
+                $fileBackend->uninstall();
+            }
 
         } catch (Exception $e) {
             try {
@@ -287,8 +290,8 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
                 CREATE TABLE {$this->prefix}bank(
                     id              int primary key,
                     validator       char(2) NOT NULL,
-                    ibanRuleNumber  int NOT NULL DEFAULT 0
-                    ibanRuleVersion int NOT NULL DEFAULT 0
+                    ibanRuleNumber  int NOT NULL DEFAULT 0,
+                    ibanRuleVersion int NOT NULL DEFAULT 0,
                     mainAgency      int NOT NULL
 
                     /* FOREIGN KEY (mainAgency) REFERENCES {$this->prefix}agency(id) */
@@ -324,9 +327,8 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
      */
     public function uninstall() {
         try {
-            $this->pdo->exec("DROP TABLE {$this->prefix}bank");
             $this->pdo->exec("DROP TABLE {$this->prefix}agency");
-
+            $this->pdo->exec("DROP TABLE {$this->prefix}bank");
         } catch (PDOException $e) {
             throw new BAV_DataBackendException_IO();
 
@@ -341,7 +343,8 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
      */
     public function getAllBanks() {
         try {
-            foreach ($this->pdo->query("SELECT id, validator FROM {$this->prefix}bank") as $bankResult) {
+            $queryString = "SELECT id, validator, ibanRuleNumber, ibanRuleVersion FROM {$this->prefix}bank";
+            foreach ($this->pdo->query($queryString) as $bankResult) {
                 if (isset($this->instances[$bankResult['id']])) {
                     continue;
 
@@ -503,8 +506,21 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
         }
     }
 
+    /**
+     * @return string
+     */
+    public function getImportFilename()
+    {
+        return $this->importFilename;
+    }
 
+    /**
+     * @param string $importFilename
+     * @return BAV_DataBackend_PDO
+     */
+    public function setImportFilename($importFilename)
+    {
+        $this->importFilename = $importFilename;
+        return $this;
+    }
 }
-
-
-?>
