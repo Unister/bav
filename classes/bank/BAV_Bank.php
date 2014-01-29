@@ -49,6 +49,10 @@ class BAV_Bank extends BAV {
      */
     $validationType = '',
     /**
+     * @var boolean
+     */
+    $extinct = false,
+    /**
      * @var BAV_Validator
      */
     $validator,
@@ -75,13 +79,17 @@ class BAV_Bank extends BAV {
      *
      * @param string $bankID
      * @param string $validationType
+     * @param int $extinct
      * @param int $ibanRuleNumber
      * @param int $ibanRuleVersion
      */
-    public function __construct(BAV_DataBackend $dataBackend, $bankID, $validationType, $ibanRuleNumber = 0, $ibanRuleVersion = 0) {
+    public function __construct(BAV_DataBackend $dataBackend, $bankID, $validationType, $extinct, $ibanRuleNumber = 0, $ibanRuleVersion = 0) {
         $this->dataBackend = $dataBackend;
         $this->bankID = $bankID;
         $this->validationType = $validationType;
+        if ($extinct == 1) {
+            $this->extinct = $extinct;
+        }
         $this->ibanRule = array(
             'number'  => $ibanRuleNumber,
             'version' => $ibanRuleVersion
@@ -92,6 +100,12 @@ class BAV_Bank extends BAV {
      */
     public function getValidationType() {
         return $this->validationType;
+    }
+    /**
+     * @return boolean
+     */
+    public function getExtinct() {
+        return $this->extinct;
     }
     /**
      * @return string
@@ -108,7 +122,7 @@ class BAV_Bank extends BAV {
     public function getMainAgency() {
         if (is_null($this->mainAgency)) {
             $this->mainAgency = $this->dataBackend->_getMainAgency($this);
-        
+
         }
         return $this->mainAgency;
     }
@@ -121,7 +135,7 @@ class BAV_Bank extends BAV {
     public function getAgencies() {
         if (is_null($this->agencies)) {
             $this->agencies = $this->dataBackend->_getAgencies($this);
-        
+
         }
         return $this->agencies;
     }
@@ -142,7 +156,7 @@ class BAV_Bank extends BAV {
     public function getValidator() {
         if (is_null($this->validator)) {
             $this->validator = BAV_Validator::getInstance($this);
-        
+
         }
         return $this->validator;
     }

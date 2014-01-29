@@ -154,7 +154,7 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
             return;
         }
 
-        $this->selectBank = $this->pdo->prepare("SELECT id, validator, ibanRuleNumber, ibanRuleVersion "
+        $this->selectBank = $this->pdo->prepare("SELECT id, validator, ibanRuleNumber, ibanRuleVersion, extinct "
             . "FROM {$this->prefix}bank WHERE id = :bankID");
 
         $agencyAttributes
@@ -194,8 +194,8 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
 
             $insertBank     = $this->pdo->prepare(
                 "INSERT INTO {$this->prefix}bank
-                    (id, validator, ibanRuleNumber, ibanRuleVersion, mainAgency)
-                    VALUES(:bankID, :validator, :ibanRuleNumber, :ibanRuleVersion, :mainAgency)");
+                    (id, validator, ibanRuleNumber, ibanRuleVersion, extinct, mainAgency)
+                    VALUES(:bankID, :validator, :ibanRuleNumber, :ibanRuleVersion, :extinct, :mainAgency)");
             $insertAgency   = $this->pdo->prepare(
                 "INSERT INTO {$this->prefix}agency
                     (id, name, postcode, city, shortTerm, pan, bic, bank)
@@ -219,6 +219,7 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
                         ":validator"       => $bank->getValidationType(),
                         ":ibanRuleNumber"  => $ibanRule['number'],
                         ":ibanRuleVersion" => $ibanRule['version'],
+	                    ":extinct"         => $bank->getExtinct(),
                         ":mainAgency"      => $bank->getMainAgency()->getID(),
 	                ));
 	                $agencies   = $bank->getAgencies();
@@ -292,6 +293,7 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
                     validator       char(2) NOT NULL,
                     ibanRuleNumber  int NOT NULL DEFAULT 0,
                     ibanRuleVersion int NOT NULL DEFAULT 0,
+                    extinct         int NOT NULL DEFAULT 0,
                     mainAgency      int NOT NULL
 
                     /* FOREIGN KEY (mainAgency) REFERENCES {$this->prefix}agency(id) */
@@ -343,7 +345,7 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
      */
     public function getAllBanks() {
         try {
-            $queryString = "SELECT id, validator, ibanRuleNumber, ibanRuleVersion FROM {$this->prefix}bank";
+            $queryString = "SELECT id, validator, ibanRuleNumber, ibanRuleVersion, extinct FROM {$this->prefix}bank";
             foreach ($this->pdo->query($queryString) as $bankResult) {
                 if (isset($this->instances[$bankResult['id']])) {
                     continue;
@@ -401,7 +403,8 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
         return array_key_exists('id',              $result)
             && array_key_exists('validator',       $result)
             && array_key_exists('ibanRuleNumber',  $result)
-            && array_key_exists('ibanRuleVersion', $result);
+            && array_key_exists('ibanRuleVersion', $result)
+            && array_key_exists('extinct',         $result);
     }
     /**
      * @return bool
@@ -424,7 +427,8 @@ class BAV_DataBackend_PDO extends BAV_DataBackend {
             throw new BAV_DataBackendException_IO_MissingAttributes();
 
         }
-        return new BAV_Bank($this, $fetchedResult['id'], $fetchedResult['validator'], $fetchedResult['ibanRuleNumber'], $fetchedResult['ibanRuleVersion']);
+        return new BAV_Bank($this, $fetchedResult['id'], $fetchedResult['validator'], $fetchedResult['extinct'],
+            $fetchedResult['ibanRuleNumber'], $fetchedResult['ibanRuleVersion']);
     }
     /**
      * @return BAV_Agency

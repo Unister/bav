@@ -36,7 +36,7 @@
  */
 class BAV_FileParser extends BAV {
 
-    
+
     const FILE_ENCODING          = 'ISO-8859-15';
     const BANKID_OFFSET          = 0;
     const BANKID_LENGTH          = 8;
@@ -56,14 +56,16 @@ class BAV_FileParser extends BAV {
     const BIC_LENGTH             = 11;
     const TYPE_OFFSET            = 150;
     const TYPE_LENGTH            = 2;
+    const EXTINCT_OFFSET         = 159;
+    const EXTINCT_LENGTH         = 1;
     const ID_OFFSET              = 152;
     const ID_LENGTH              = 6;
     const IBANRULENUMBER_OFFSET  = 168;
     const IBANRULENUMBER_LENGTH  = 4;
     const IBANRULEVERSION_OFFSET = 172;
     const IBANRULEVERSION_LENGTH = 2;
-    
-    
+
+
     private
     /**
      * @var resource
@@ -81,8 +83,8 @@ class BAV_FileParser extends BAV {
      * @var int
      */
     $lineLength = 0;
-    
-    
+
+
     /**
      * @param String $file The data source
      */
@@ -98,36 +100,36 @@ class BAV_FileParser extends BAV {
     private function init() {
         if (is_resource($this->fp)) {
             return;
-        
+
         }
         $this->fp = @fopen($this->file, 'r');
         if (! is_resource($this->fp)) {
             if (! file_exists($this->file)) {
                 throw new BAV_FileParserException_FileNotExists($this->file);
-            
+
             } else {
                 throw new BAV_FileParserException_IO();
-                
+
             }
-        
+
         }
-        
-        
+
+
         $dummyLine = fgets($this->fp, 1024);
         if (! $dummyLine) {
             throw new BAV_FileParserException_IO();
-        
+
         }
         $this->lineLength = strlen($dummyLine);
-        
+
         clearstatcache(); // filesize() seems to be 0 sometimes
         $filesize = filesize($this->file);
         if (! $filesize) {
             throw new BAV_FileParserException_IO(
                 "Could not read filesize for '$this->file'."
             );
-        
-        }        
+
+        }
         $this->lines = floor(($filesize - 1) / $this->lineLength);
     }
     /**
@@ -146,7 +148,7 @@ class BAV_FileParser extends BAV {
     public function rewind() {
         if (fseek($this->getFileHandle(), 0) === -1) {
             throw new BAV_FileParserException_IO();
-        
+
         }
     }
     /**
@@ -158,7 +160,7 @@ class BAV_FileParser extends BAV {
     public function seekLine($line, $offset = 0) {
         if (fseek($this->getFileHandle(), $line * $this->lineLength + $offset) === -1) {
             throw new BAV_FileParserException_IO();
-        
+
         }
     }
     /**
@@ -228,13 +230,14 @@ class BAV_FileParser extends BAV {
     public function getBank(BAV_DataBackend $dataBackend, $line) {
         if (self::$encoding->strlen($line) < self::TYPE_OFFSET + self::TYPE_LENGTH) {
             throw new BAV_FileParserException_ParseError("Invalid line length in Line $line.");
-        
+
         }
-        $type   = self::$encoding->substr($line, self::TYPE_OFFSET,      self::TYPE_LENGTH);
-        $bankID = self::$encoding->substr($line, self::BANKID_OFFSET,    self::BANKID_LENGTH);
+        $type   = self::$encoding->substr($line, self::TYPE_OFFSET, self::TYPE_LENGTH);
+        $extinct = self::$encoding->substr($line, self::EXTINCT_OFFSET, self::EXTINCT_LENGTH);
+        $bankID = self::$encoding->substr($line, self::BANKID_OFFSET, self::BANKID_LENGTH);
         $ibanRuleNumber = intval(self::$encoding->substr($line, self::IBANRULENUMBER_OFFSET, self::IBANRULENUMBER_LENGTH));
         $ibanRuleVersion = intval(self::$encoding->substr($line, self::IBANRULEVERSION_OFFSET, self::IBANRULEVERSION_LENGTH));
-        return new BAV_Bank($dataBackend, $bankID, $type, $ibanRuleNumber, $ibanRuleVersion);
+        return new BAV_Bank($dataBackend, $bankID, $type, $extinct, $ibanRuleNumber, $ibanRuleVersion);
     }
     /**
      * @throws BAV_FileParserException_ParseError
@@ -244,7 +247,7 @@ class BAV_FileParser extends BAV {
     public function getAgency(BAV_Bank $bank, $line) {
         if (self::$encoding->strlen($line) < self::ID_OFFSET + self::ID_LENGTH) {
             throw new BAV_FileParserException_ParseError("Invalid line length.");
-        
+
         }
         $id   = trim(self::$encoding->substr($line, self::ID_OFFSET, self::ID_LENGTH));
         $name = trim(self::$encoding->substr($line, self::NAME_OFFSET, self::NAME_LENGTH));
@@ -263,7 +266,7 @@ class BAV_FileParser extends BAV {
     public function isMainAgency($line) {
         if (self::$encoding->strlen($line) < self::TYPE_OFFSET + self::TYPE_LENGTH) {
             throw new BAV_FileParserException_ParseError("Invalid line length.");
-        
+
         }
         return self::$encoding->substr($line, self::ISMAIN_OFFSET, 1) === '1';
     }
@@ -273,7 +276,7 @@ class BAV_FileParser extends BAV {
     public function getFile() {
         return $this->file;
     }
-    
+
 
 }
 
