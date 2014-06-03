@@ -1,12 +1,9 @@
 <?php
 
-
-
-
 /**
- * Implements 95
+ * Implements 90g
  *
- * Copyright (C) 2006  Markus Malkusch <markus@malkusch.de>
+ * Copyright (C) 2014  Markus Malkusch <markus@malkusch.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,27 +21,32 @@
  */
 
 
-class BAV_Validator_95 extends BAV_Validator_06 {
+class BAV_Validator_90g extends BAV_Validator_Iteration_Weighted {
 
 
     public function __construct(BAV_Bank $bank) {
         parent::__construct($bank);
 
-        $this->setWeights(array(2, 3, 4, 5, 6, 7));
+        $this->setWeights(array(2, 1));
+
+        /*
+         * The specification is not clear about 4 or 3.
+         * see https://github.com/malkusch/bav/issues/14
+         */
+        $this->setEnd(3);
     }
-    
-    
-    public function isValid($account) {
-        return parent::isValid($account)
-            || $this->isBetween(1, 1999999)
-            || $this->isBetween(9000000, 25999999)
-            || $this->isBetween(396000000, 499999999)
-            || $this->isBetween(700000000, 799999999)
-            || $this->isBetween(910000000, 989999999);
+
+
+    protected function iterationStep() {
+        $this->accumulator += $this->number * $this->getWeight();
+    }
+
+
+    protected function getResult() {
+        $rest = $this->accumulator % 7;
+        $checknumber = $rest == 0 ? 0 : (7 - $rest);
+        return (string)$checknumber === $this->getCheckNumber();
     }
 
 
 }
-
-
-?>

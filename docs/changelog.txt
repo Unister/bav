@@ -1,13 +1,16 @@
-Version 0.28 - March 12, 2013
+Version 0.27 - May 22, 2014
 ---------------------------
-    - New Validators: E0
-
-    - Changed Validators: C6, D1
-
-Version 0.27 - not yet released
--------------------------------
     - replaced the autoloader with http://php-autoloader.malkusch.de
 
+    - fixed validator C5
+      see https://github.com/malkusch/bav/issues/12
+
+    - changed download URI
+      see https://github.com/malkusch/bav/issues/10
+
+    - changed Validators: C6, D1, 51, 57, 66, 84, 90, 95
+
+    - added validators E0, E1
 
 Version 0.26 - June 3, 2012
 ---------------------------

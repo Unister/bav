@@ -1,12 +1,9 @@
 <?php
 
-
-
-
 /**
- * Implements 66
+ * Implements E1
  *
- * Copyright (C) 2006  Markus Malkusch <markus@malkusch.de>
+ * Copyright (C) 2014  Markus Malkusch <markus@malkusch.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,37 +18,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * This class was strong inspired by the class SystemE1 of Jan Schädlich
+ * https://github.com/jschaedl/Bav/blob/master/library/Bav/Validator/De/SystemE1.php
  */
 
+class BAV_Validator_E1 extends BAV_Validator_Iteration_Weighted {
 
-class BAV_Validator_66 extends BAV_Validator_Iteration_Weighted {
-
+    static private $subsitutions = array(48, 49, 50, 51, 52, 53, 54, 55, 56, 57);
 
     public function __construct(BAV_Bank $bank) {
         parent::__construct($bank);
         
-        $this->setWeights(array(2, 3, 4, 5, 6, 0, 0, 7));
-        $this->setStart(-2);
-        $this->setEnd(1);
+        $this->setWeights(array(1, 2, 3, 4, 5, 6, 11, 10, 9));
+        $this->setDivisor(11);
     }
 
 
     protected function iterationStep() {
-        $this->accumulator += $this->number * $this->getWeight();
+        $this->accumulator += self::$subsitutions[$this->number] * $this->getWeight();
     }
 
 
     protected function getResult() {
-        // update 2014-03-03
-        if ($this->account{1} == '9') {
-            return true;
+        $result = $this->accumulator % $this->divisor;
+        if ($result == 10) {
+            return false;
 
         }
-        $result = (11 - $this->accumulator % 11) % 10;
-        return $this->account{0} == '0' && (string)$result === $this->getCheckNumber();
+        return (string) $result === $this->getCheckNumber();
     }
 
 }
-
 
 ?>

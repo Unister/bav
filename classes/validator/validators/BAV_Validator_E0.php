@@ -1,13 +1,9 @@
 <?php
 
-
-
-
-
 /**
  * Implements E0
  *
- * Copyright (C) 2013  Heiko Hilbert <heiko.hilbert@trivago.com>
+ * Copyright (C) 2013 Heiko Hilbert <heiko.hilbert@trivago.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,24 +12,24 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * @author hhilbert 2013-03-12 added
  */
 
 
-class BAV_Validator_E0 extends BAV_Validator_00
-{
-    protected function validate()
-    {
+class BAV_Validator_E0 extends BAV_Validator_00 {
+
+
+    protected function validate() {
         parent::validate();
         $this->accumulator += 7;
     }
-}
 
-?>
+
+}
