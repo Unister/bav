@@ -53,6 +53,10 @@ class BAV_Bank extends BAV {
      */
     $extinct = false,
     /**
+     * @var string
+     */
+    $successorBankID = '',
+    /**
      * @var BAV_Validator
      */
     $validator,
@@ -77,18 +81,25 @@ class BAV_Bank extends BAV {
      * Do not even think to use new BAV_Bank()!
      * Go and use BAV_DataBackend->getBank($bankID).
      *
+     * @param BAV_DataBackend $dataBackend
      * @param string $bankID
      * @param string $validationType
      * @param int $extinct
      * @param int $ibanRuleNumber
      * @param int $ibanRuleVersion
+     * @param string $successorBankID
      */
-    public function __construct(BAV_DataBackend $dataBackend, $bankID, $validationType, $extinct, $ibanRuleNumber = 0, $ibanRuleVersion = 0) {
+    public function __construct(BAV_DataBackend $dataBackend, $bankID, $validationType, $extinct, $ibanRuleNumber = 0,
+                                $ibanRuleVersion = 0, $successorBankID = ''
+    ) {
         $this->dataBackend = $dataBackend;
         $this->bankID = $bankID;
         $this->validationType = $validationType;
-        if ($extinct == 1) {
-            $this->extinct = $extinct;
+        if ($extinct) {
+            $this->extinct = true;
+        }
+        if (!empty($successorBankID)) {
+            $this->successorBankID = $successorBankID;
         }
         $this->ibanRule = array(
             'number'  => $ibanRuleNumber,
@@ -168,7 +179,13 @@ class BAV_Bank extends BAV {
     public function getIbanRule() {
         return $this->ibanRule;
     }
+
+    /**
+     * Get bankId of a possible successor (is empty if no successor exists)
+     * @return string
+     */
+    public function getSuccessorBankID()
+    {
+        return (string) $this->successorBankID;
+    }
 }
-
-
-?>
